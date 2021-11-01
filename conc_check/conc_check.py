@@ -232,6 +232,12 @@ def main():
         print("Please select check mode of -p or -s. Or both")
         exit(0)
 
+    if args.system:
+        print("[~] Checking for command injections")
+
+    if args.printf:
+        print("[~] Checking for format string vulnerabilities")
+
     funcs, proj = get_funcs_and_prj(args.file, args.system, args.printf)
 
     if len(funcs) == 0:
