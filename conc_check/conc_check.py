@@ -45,13 +45,7 @@ system_list = [
 ]
 
 # function name and format arg position
-printf_list = {
-"printf",
-"fprintf",
-"sprintf",
-"snprintf",
-"vsnprinf" 
-}
+printf_list = {"printf", "fprintf", "sprintf", "snprintf", "vsnprinf"}
 
 options = {
     "broker_url": "pyamqp://guest@localhost//",
@@ -62,7 +56,6 @@ options = {
     "result_serializer": "pickle",
     "task_serializer": "pickle",
 }
-
 
 
 app = Celery("CeleryTask")
@@ -94,12 +87,13 @@ def do_trace(proj, func_addr):
 
 
 def start_workers(worker):
-    #t = threading.Thread(target=worker.start)
+    # t = threading.Thread(target=worker.start)
     p = multiprocessing.Process(target=worker.start)
     p.start()
     atexit.register(worker.stop)
     atexit.register(p.join)
     return p
+
 
 # Best effort system hooks
 def hook_list(p, hooks):
@@ -110,13 +104,15 @@ def hook_list(p, hooks):
             print(e)
             pass
 
-def hook_printf_list(p,hooks):
+
+def hook_printf_list(p, hooks):
     for sys_type in hooks:
         try:
             p.hook_symbol(sys_type.name, printf_mapping[sys_type.name]())
         except Exception as e:
             print(e)
             pass
+
 
 def get_funcs_and_prj(filename):
 
@@ -256,11 +252,11 @@ def main():
         if func_name:
             func_name = func_name.name
         if func in func_addres:
-            print("[+] : {} : {}".format(hex(func),func_name))
+            print("[+] : {} : {}".format(hex(func), func_name))
             pair = [(x, y) for x, y in results if x == func][0]
             print(pair[1])
         else:
-            print("[-] : {} : {}".format(hex(func),func_name))
+            print("[-] : {} : {}".format(hex(func), func_name))
 
 
 if __name__ == "__main__":

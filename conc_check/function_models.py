@@ -12,6 +12,7 @@ def get_max_strlen(state, value):
             return i - 1
     return i
 
+
 def get_largest_symbolic_buffer(symbolic_list):
 
     """
@@ -45,8 +46,7 @@ def get_largest_symbolic_buffer(symbolic_list):
     return position, greatest_count
 
 
-class FormatDetector():
-
+class FormatDetector:
     def checkExploitable(self):
         """
         For each value passed to printf
@@ -70,8 +70,7 @@ class FormatDetector():
         var_data = state.memory.load(var_loc, var_len)
 
         symbolic_list = [
-            state.memory.load(var_loc + x,1).symbolic
-            for x in range(var_len)
+            state.memory.load(var_loc + x, 1).symbolic for x in range(var_len)
         ]
 
         """
@@ -125,12 +124,14 @@ class FormatDetector():
             state.globals["cmd"] = print_formated
 
 
-'''
+"""
 I was dynamically creating these classes with the
 type function, but when you do that, then they don't
 like getting pickled. So here we have manual classes
-'''
-class PrintfCheck(angr.procedures.libc.printf.printf,FormatDetector):
+"""
+
+
+class PrintfCheck(angr.procedures.libc.printf.printf, FormatDetector):
     IS_FUNCTION = True
     input_index = 0
 
@@ -138,7 +139,8 @@ class PrintfCheck(angr.procedures.libc.printf.printf,FormatDetector):
         self.checkExploitable()
         return super(type(self), self).run()
 
-class FprintfCheck(angr.procedures.libc.fprintf.fprintf,FormatDetector):
+
+class FprintfCheck(angr.procedures.libc.fprintf.fprintf, FormatDetector):
     IS_FUNCTION = True
     input_index = 1
 
@@ -146,7 +148,8 @@ class FprintfCheck(angr.procedures.libc.fprintf.fprintf,FormatDetector):
         self.checkExploitable()
         return super(type(self), self).run(file_ptr, fmt)
 
-class SprintfCheck(angr.procedures.libc.sprintf.sprintf,FormatDetector):
+
+class SprintfCheck(angr.procedures.libc.sprintf.sprintf, FormatDetector):
     IS_FUNCTION = True
     input_index = 1
 
@@ -154,7 +157,8 @@ class SprintfCheck(angr.procedures.libc.sprintf.sprintf,FormatDetector):
         self.checkExploitable()
         return super(type(self), self).run(dst_ptr, fmt)
 
-class SnprintfCheck(angr.procedures.libc.snprintf.snprintf,FormatDetector):
+
+class SnprintfCheck(angr.procedures.libc.snprintf.snprintf, FormatDetector):
     IS_FUNCTION = True
     input_index = 2
 
@@ -162,7 +166,8 @@ class SnprintfCheck(angr.procedures.libc.snprintf.snprintf,FormatDetector):
         self.checkExploitable()
         return super(type(self), self).run(dst_ptr, size, fmt)
 
-class VsnprintfCheck(angr.procedures.libc.vsnprintf.vsnprintf,FormatDetector):
+
+class VsnprintfCheck(angr.procedures.libc.vsnprintf.vsnprintf, FormatDetector):
     IS_FUNCTION = True
     input_index = 2
 
@@ -170,10 +175,13 @@ class VsnprintfCheck(angr.procedures.libc.vsnprintf.vsnprintf,FormatDetector):
         self.checkExploitable()
         return super(type(self), self).run(str_ptr, size, fmt, ap)
 
+
 """
 Basic check to see if symbolic input makes it's way into
 an argument for a system call
 """
+
+
 class SystemLibc(angr.procedures.libc.system.system):
     def check_exploitable(self, cmd):
 
@@ -227,10 +235,11 @@ class SystemLibc(angr.procedures.libc.system.system):
         self.check_exploitable(cmd)
         return super(type(self), self).run(cmd)
 
+
 printf_mapping = {
-    "printf" : PrintfCheck,
-    "fprintf" : FprintfCheck,
-    "sprintf" : SprintfCheck,
-    "snprintf" : SnprintfCheck,
-    "vsnprintf" : VsnprintfCheck
+    "printf": PrintfCheck,
+    "fprintf": FprintfCheck,
+    "sprintf": SprintfCheck,
+    "snprintf": SnprintfCheck,
+    "vsnprintf": VsnprintfCheck,
 }
