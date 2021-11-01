@@ -8,7 +8,6 @@ def get_max_strlen(state, value):
     for c in value.chop(8):  # Chop by byte
         i += 1
         if not state.solver.satisfiable([c != 0x00]):
-            print("Found the null at offset : {}".format(i))
             return i - 1
     return i
 
@@ -38,11 +37,7 @@ def get_largest_symbolic_buffer(symbolic_list):
                 position = i - 1 - count
                 # previous position minus greatest count
             count = 0
-    print(
-        "[+] Found symbolic buffer at position {} of length {}".format(
-            position, greatest_count
-        )
-    )
+
     return position, greatest_count
 
 
