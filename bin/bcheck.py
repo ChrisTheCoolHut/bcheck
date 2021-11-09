@@ -27,7 +27,7 @@ try:
     sys.stdout.encoding = (
         "UTF-8"  # AttributeError: 'LoggingProxy' object has no attribute 'encoding'
     )
-except AttributeError:  # AttributeError: readonly attribute
+except (AttributeError,TypeError):  # AttributeError: readonly attribute
     pass
 
 # Hook for cmd inj
