@@ -12,15 +12,23 @@ pip install -e .
 ## Usage
 ```
 bcheck.py -h
-usage: bcheck.py [-h] [-p] [-s] file
+usage: bcheck.py [-h] [-p] [-s] [-f] [-t TIMEOUT] [-m MEMORY_LIMIT] [-v] file
 
 positional arguments:
-  file          Binary file to check
+  file                  Binary file to check
 
 optional arguments:
-  -h, --help    show this help message and exit
-  -p, --printf  Enable printf checking
-  -s, --system  Enable command injection checking
+  -h, --help            show this help message and exit
+  -p, --printf          Enable printf checking
+  -s, --system          Enable command injection checking
+  -f, --filter          Enables basic binary filtering
+  -v, --verbose         Increases logging verbosity
+
+Worker Options:
+  -t TIMEOUT, --timeout TIMEOUT
+                        Set worker timeout. Default 60 seconds
+  -m MEMORY_LIMIT, --memory_limit MEMORY_LIMIT
+                        Set worker memory limit in GB. Default 2GB
 ```
 
 ## Example
@@ -39,5 +47,11 @@ Found 5 test sites in binary
 0x7ffefdf8	->	b'nvram_set 2860 old_firmware "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x00"'
 [+] : 0x401338 : mtd_write_bootloader
 0x7ffefdf8	->	b'/bin/mtd_write -o 0 -l 0 write AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\x01 Bootloader'
+
+```
+
+## Test
+
+```language
 
 ```
