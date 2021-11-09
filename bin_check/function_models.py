@@ -92,7 +92,6 @@ class FormatDetector:
         position = 0
         count = 0
         greatest_count = 0
-        prev_item = symbolic_list[0]
         for i in range(1, len(symbolic_list)):
             if symbolic_list[i] and symbolic_list[i] == symbolic_list[i - 1]:
                 count = count + 1
@@ -129,6 +128,8 @@ class FormatDetector:
 
             state.globals["exploitable"] = True
             state.globals["cmd"] = print_formated
+            return True
+        return False
 
 
 """
@@ -143,8 +144,8 @@ class PrintfCheck(angr.procedures.libc.printf.printf, FormatDetector):
     input_index = 0
 
     def run(self):
-        self.checkExploitable()
-        return super(type(self), self).run()
+        if not self.checkExploitable():
+            return super(type(self), self).run()
 
 
 class FprintfCheck(angr.procedures.libc.fprintf.fprintf, FormatDetector):
@@ -152,8 +153,8 @@ class FprintfCheck(angr.procedures.libc.fprintf.fprintf, FormatDetector):
     input_index = 1
 
     def run(self, file_ptr, fmt):
-        self.checkExploitable()
-        return super(type(self), self).run(file_ptr, fmt)
+        if not self.checkExploitable():
+            return super(type(self), self).run(file_ptr, fmt)
 
 
 class SprintfCheck(angr.procedures.libc.sprintf.sprintf, FormatDetector):
@@ -161,8 +162,8 @@ class SprintfCheck(angr.procedures.libc.sprintf.sprintf, FormatDetector):
     input_index = 1
 
     def run(self, dst_ptr, fmt):
-        self.checkExploitable()
-        return super(type(self), self).run(dst_ptr, fmt)
+        if not self.checkExploitable():
+            return super(type(self), self).run(dst_ptr, fmt)
 
 
 class SnprintfCheck(angr.procedures.libc.snprintf.snprintf, FormatDetector):
@@ -170,8 +171,8 @@ class SnprintfCheck(angr.procedures.libc.snprintf.snprintf, FormatDetector):
     input_index = 2
 
     def run(self, dst_ptr, size, fmt):
-        self.checkExploitable()
-        return super(type(self), self).run(dst_ptr, size, fmt)
+        if not self.checkExploitable():
+            return super(type(self), self).run(dst_ptr, size, fmt)
 
 
 class VsnprintfCheck(angr.procedures.libc.vsnprintf.vsnprintf, FormatDetector):
@@ -179,8 +180,8 @@ class VsnprintfCheck(angr.procedures.libc.vsnprintf.vsnprintf, FormatDetector):
     input_index = 2
 
     def run(self, str_ptr, size, fmt, ap):
-        self.checkExploitable()
-        return super(type(self), self).run(str_ptr, size, fmt, ap)
+        if not self.checkExploitable():
+            return super(type(self), self).run(str_ptr, size, fmt, ap)
 
 
 """
