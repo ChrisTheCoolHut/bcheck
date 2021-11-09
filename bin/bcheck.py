@@ -8,8 +8,10 @@ import atexit
 import tqdm
 import time
 import os
+import logging
 
 from bin_check.function_models import *
+from bin_check.filter_binary import should_check_binary
 
 # angr logging is way too verbose
 import logging
@@ -27,21 +29,8 @@ try:
     sys.stdout.encoding = (
         "UTF-8"  # AttributeError: 'LoggingProxy' object has no attribute 'encoding'
     )
-except (AttributeError,TypeError):  # AttributeError: readonly attribute
+except (AttributeError, TypeError):  # AttributeError: readonly attribute
     pass
-
-# Hook for cmd inj
-system_list = [
-    "system",
-    "execv",
-    "execve",
-    "popen",
-    "execl",
-    "execle",
-    "execlp",
-    "do_system",
-    "doSystembk",
-]
 
 # function name and format arg position
 printf_list = {"printf", "fprintf", "sprintf", "snprintf", "vsnprinf"}
@@ -49,8 +38,8 @@ printf_list = {"printf", "fprintf", "sprintf", "snprintf", "vsnprinf"}
 options = {
     "broker_url": "pyamqp://guest@localhost//",
     "result_backend": "rpc://",
-    "worker_max_memory_per_child": 2048000, # 2GB
-    "task_time_limit": 60, # 1 minute timeout
+    "worker_max_memory_per_child": 2048000,  # 2GB
+    "task_time_limit": 60,  # 1 minute timeout
     "accept_content": ["pickle", "json"],
     "result_serializer": "pickle",
     "task_serializer": "pickle",
@@ -222,6 +211,13 @@ def main():
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "-f",
+        "--filter",
+        help="Enables basic binary filtering",
+        action="store_true",
+        default=False,
+    )
 
     args = parser.parse_args()
 
@@ -234,6 +230,11 @@ def main():
 
     if args.printf:
         print("[~] Checking for format string vulnerabilities")
+
+    if args.filter:
+        if not should_check_binary(args.file):
+            print("Filtered out binary")
+            exit(0)
 
     funcs, proj = get_funcs_and_prj(args.file, args.system, args.printf)
 

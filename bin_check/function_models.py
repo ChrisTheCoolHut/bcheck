@@ -1,5 +1,17 @@
 import angr
 
+system_list = [
+    "system",
+    "execv",
+    "execve",
+    "popen",
+    "execl",
+    "execle",
+    "execlp",
+    "do_system",
+    "doSystembk",
+]
+
 MAX_READ_LEN = 1024
 
 # Better symbolic strlen
