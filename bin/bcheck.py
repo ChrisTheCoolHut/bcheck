@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 import argparse
 import logging
+
+logging.basicConfig()
+
 from bin_check.filter_binary import should_check_binary
 from bin_check.celery_app import *
 from bin_check.tracing import get_funcs_and_prj
-
-# angr logging is way too verbose
-import logging
 
 log_things = ["angr", "pyvex", "claripy", "cle"]
 for log in log_things:
     logger = logging.getLogger(log)
     logger.disabled = True
     logger.propagate = False
+
 
 def main():
 
@@ -40,23 +41,53 @@ def main():
         action="store_true",
         default=False,
     )
+    worker_options = parser.add_argument_group(title="Worker Options")
+    worker_options.add_argument(
+        "-t",
+        "--timeout",
+        help="Set worker timeout. Default 60 seconds",
+        type=int,
+        default=60,
+    )
+    worker_options.add_argument(
+        "-m",
+        "--memory_limit",
+        help="Set worker memory limit in GB. Default 2GB",
+        type=int,
+        default=2097152,
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        help="Increases logging verbosity",
+        action="store_true",
+        default=False,
+    )
 
     args = parser.parse_args()
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    app.conf["task_time_limit"] = args.timeout
+    app.conf["worker_max_memory_per_child"] = args.memory_limit * 1024 * 1024
 
     if not args.system and not args.printf:
         print("Please select check mode of -p or -s. Or both")
         exit(0)
+
+    print("[~] {}".format(args.file))
+
+    if args.filter:
+        if not should_check_binary(args.file):
+            print("Filtered out binary")
+            exit(0)
 
     if args.system:
         print("[~] Checking for command injections")
 
     if args.printf:
         print("[~] Checking for format string vulnerabilities")
-
-    if args.filter:
-        if not should_check_binary(args.file):
-            print("Filtered out binary")
-            exit(0)
 
     funcs, proj = get_funcs_and_prj(args.file, args.system, args.printf)
 
@@ -67,7 +98,7 @@ def main():
     # Remove any previous exitted runs
     app.control.purge()
 
-    worker = app.Worker()
+    worker = app.Worker(quiet=True)
 
     t = start_workers(worker)
 
@@ -84,7 +115,6 @@ def main():
 
     func_addres = [x for x, y in results]
 
-    print("[~] {}".format(args.file))
     print("[-] Scanned functions:")
     for func in funcs:
         func_name = proj.loader.find_symbol(func)

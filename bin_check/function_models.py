@@ -1,4 +1,5 @@
 import angr
+import logging
 
 system_list = [
     "system",
@@ -104,7 +105,7 @@ class FormatDetector:
                     position = i - 1 - count
                     # previous position minus greatest count
                 count = 0
-        print(
+        logging.info(
             "[+] Found symbolic buffer at position {} of length {}".format(
                 position, greatest_count
             )
@@ -119,12 +120,12 @@ class FormatDetector:
 
             command_string = state.solver.eval(var_data, cast_to=bytes)
             print_formated = "{}\t->\t{}".format(hex(var_loc), command_string)
-            print(
+            logging.info(
                 "Format String bug in function at {}".format(
                     hex(state.globals["func_addr"])
                 )
             )
-            print(print_formated)
+            logging.info(print_formated)
 
             state.globals["exploitable"] = True
             state.globals["cmd"] = print_formated
@@ -229,12 +230,12 @@ class SystemLibc(angr.procedures.libc.system.system):
 
             command_string = state.solver.eval(var_data, cast_to=bytes)
             print_formated = "{}\t->\t{}".format(hex(location), command_string)
-            print(
+            logging.info(
                 "Command Injection in function at {}".format(
                     hex(state.globals["func_addr"])
                 )
             )
-            print(print_formated)
+            logging.info(print_formated)
 
             state.globals["exploitable"] = True
             state.globals["cmd"] = print_formated

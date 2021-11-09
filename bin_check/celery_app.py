@@ -5,6 +5,8 @@ import tqdm
 import time
 import atexit
 import sys
+import os
+import logging
 
 options = {
     "broker_url": "pyamqp://guest@localhost//",
@@ -44,8 +46,22 @@ def do_trace(proj, func_addr):
     return None, None
 
 
+def mute_worker():
+    logging.basicConfig()
+    print = logging.info
+
+
+def quiet_worker_launch(worker):
+    logger = logging.getLogger()
+    logger.disabled = True
+    logger.propagate = False
+    sys.stdout = open(os.devnull, "w")
+    worker.start()
+
+
 def start_workers(worker):
-    p = multiprocessing.Process(target=worker.start)
+    p = multiprocessing.Process(target=quiet_worker_launch, args=(worker,))
+    # p = multiprocessing.Process(target=worker.start, initializer=mute_worker)
     p.start()
     atexit.register(worker.stop)
     atexit.register(p.join)

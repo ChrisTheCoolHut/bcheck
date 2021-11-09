@@ -2,6 +2,7 @@ import angr
 from angr import sim_options as so
 from bin_check.function_models import *
 
+
 # function name and format arg position
 printf_list = {"printf", "fprintf", "sprintf", "snprintf", "vsnprinf"}
 
@@ -46,6 +47,7 @@ def get_funcs_and_prj(filename, system_check=False, printf_check=False):
 
     binary_printf_list = [x for x in p.loader.symbols if x.name in printf_list]
 
+    print("[~] Building CFG")
     cfg = p.analyses.CFG(cross_references=True, show_progressbar=True)
 
     xrefs = set()
