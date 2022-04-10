@@ -98,7 +98,7 @@ def main():
     # Remove any previous exitted runs
     app.control.purge()
 
-    worker = app.Worker(quiet=True)
+    worker = app.Worker(quiet=args.verbose)
 
     t = start_workers(worker)
 
