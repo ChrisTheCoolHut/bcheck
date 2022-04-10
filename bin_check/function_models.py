@@ -1,6 +1,8 @@
 import angr
 import logging
 
+log = logging.getLogger(__name__)
+
 system_list = [
     "system",
     "execv",
@@ -54,8 +56,40 @@ def get_largest_symbolic_buffer(symbolic_list):
     return position, greatest_count
 
 
-class FormatDetector:
-    def checkExploitable(self):
+# Better symbolic strlen
+def get_max_strlen(state, value):
+    i = 0
+    for c in value.chop(8): # Chop by byte
+        i += 1
+        if not state.solver.satisfiable([c != 0x00]):
+            log.info("Found the null at offset : {}".format(i))
+            return i-1
+    return i
+
+
+"""
+Model either printf("User input") or printf("%s","Userinput")
+"""
+
+
+class printFormat(angr.procedures.libc.printf.printf):
+    IS_FUNCTION = True
+    input_index = 0
+    """
+    Checks userinput arg
+    """
+
+    def __init__(self, input_index):
+        # Set user input index for different
+        # printf types
+        self.input_index = input_index
+        angr.procedures.libc.printf.printf.__init__(self)
+
+    def checkExploitable(self, fmt):
+
+        bits = self.state.arch.bits
+        load_len = int(bits / 8)
+        max_read_len = 1024
         """
         For each value passed to printf
         Check to see if there are any symbolic bytes
@@ -65,21 +99,29 @@ class FormatDetector:
         state = self.state
         solv = state.solver.eval
 
-        printf_arg = self.arg(i)
+        if len(self.arguments) <= i:
+            print("{} vs {}".format(len(self.arguments),i))
+            print(hex(state.globals["func_addr"]))
+            return False
+        printf_arg = self.arguments[i]
 
         var_loc = solv(printf_arg)
 
         # Parts of this argument could be symbolic, so we need
         # to check every byte
-        var_data = state.memory.load(var_loc, MAX_READ_LEN)
+        var_data = state.memory.load(var_loc, max_read_len)
         var_len = get_max_strlen(state, var_data)
+
+        fmt_len = self._sim_strlen(fmt)
 
         # Reload with just our max len
         var_data = state.memory.load(var_loc, var_len)
 
+        log.info("Building list of symbolic bytes")
         symbolic_list = [
             state.memory.load(var_loc + x, 1).symbolic for x in range(var_len)
         ]
+        log.info("Done Building list of symbolic bytes")
 
         """
         Iterate over the characters in the string
@@ -93,6 +135,7 @@ class FormatDetector:
         position = 0
         count = 0
         greatest_count = 0
+        prev_item = symbolic_list[0]
         for i in range(1, len(symbolic_list)):
             if symbolic_list[i] and symbolic_list[i] == symbolic_list[i - 1]:
                 count = count + 1
@@ -105,86 +148,30 @@ class FormatDetector:
                     position = i - 1 - count
                     # previous position minus greatest count
                 count = 0
-        logging.info(
+        log.info(
             "[+] Found symbolic buffer at position {} of length {}".format(
                 position, greatest_count
             )
         )
 
         if greatest_count > 0:
-            # for i in range(greatest_count):
-            #     # Get symbolic byte
-            #     curr_byte = state.memory.load(var_loc + position + i, 1)
-            #     if state.solver.satisfiable(extra_constraints=[curr_byte == b"A"]):
-            #         state.add_constraints(curr_byte == b"A")
-
             command_string = state.solver.eval(var_data, cast_to=bytes)
             print_formated = "{}\t->\t{}".format(hex(var_loc), command_string)
-            logging.info(
+            log.info(
                 "Format String bug in function at {}".format(
                     hex(state.globals["func_addr"])
                 )
             )
-            logging.info(print_formated)
+            log.info(print_formated)
 
             state.globals["exploitable"] = True
             state.globals["cmd"] = print_formated
             return True
         return False
 
-
-"""
-I was dynamically creating these classes with the
-type function, but when you do that, then they don't
-like getting pickled. So here we have manual classes
-"""
-
-
-class PrintfCheck(angr.procedures.libc.printf.printf, FormatDetector):
-    IS_FUNCTION = True
-    input_index = 0
-
-    def run(self):
-        if not self.checkExploitable():
-            return super(type(self), self).run()
-
-
-class FprintfCheck(angr.procedures.libc.fprintf.fprintf, FormatDetector):
-    IS_FUNCTION = True
-    input_index = 1
-
-    def run(self, file_ptr, fmt):
-        if not self.checkExploitable():
-            return super(type(self), self).run(file_ptr, fmt)
-
-
-class SprintfCheck(angr.procedures.libc.sprintf.sprintf, FormatDetector):
-    IS_FUNCTION = True
-    input_index = 1
-
-    def run(self, dst_ptr, fmt):
-        if not self.checkExploitable():
-            return super(type(self), self).run(dst_ptr, fmt)
-
-
-class SnprintfCheck(angr.procedures.libc.snprintf.snprintf, FormatDetector):
-    IS_FUNCTION = True
-    input_index = 2
-
-    def run(self, dst_ptr, size, fmt):
-        if not self.checkExploitable():
-            return super(type(self), self).run(dst_ptr, size, fmt)
-
-
-class VsnprintfCheck(angr.procedures.libc.vsnprintf.vsnprintf, FormatDetector):
-    IS_FUNCTION = True
-    input_index = 2
-
-    def run(self, str_ptr, size, fmt, ap):
-        if not self.checkExploitable():
-            return super(type(self), self).run(str_ptr, size, fmt, ap)
-
-
+    def run(self, _, fmt):
+        if not self.checkExploitable(fmt):
+            return super(type(self), self).run(fmt)
 """
 Basic check to see if symbolic input makes it's way into
 an argument for a system call
@@ -243,12 +230,3 @@ class SystemLibc(angr.procedures.libc.system.system):
     def run(self, cmd):
         self.check_exploitable(cmd)
         return super(type(self), self).run(cmd)
-
-
-printf_mapping = {
-    "printf": PrintfCheck,
-    "fprintf": FprintfCheck,
-    "sprintf": SprintfCheck,
-    "snprintf": SnprintfCheck,
-    "vsnprintf": VsnprintfCheck,
-}

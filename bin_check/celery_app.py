@@ -41,8 +41,15 @@ def do_trace(proj, func_addr):
         for err_record in simgr.errored:
             print(err_record)
             print(err_record.state.globals.items())
+            if "game over" in str(err_record.state):
+                return (func_addr, err_record.state.globals["cmd"])
             if "exploitable" in err_record.state.globals:
                 return (func_addr, err_record.state.globals["cmd"])
+    if len(simgr.stashes):
+        for stash in simgr.stashes:
+            for state in simgr.stashes[stash]:
+                if "exploitable" in state.globals:
+                    return (func_addr, state.globals["cmd"])
     return None, None
 
 

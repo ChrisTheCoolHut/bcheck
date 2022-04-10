@@ -6,6 +6,22 @@ from bin_check.function_models import *
 # function name and format arg position
 printf_list = {"printf", "fprintf", "sprintf", "snprintf", "vsnprinf"}
 
+'''
+    # Stdio based ones
+    p.hook_symbol("printf", printFormat(0))
+    p.hook_symbol("fprintf", printFormat(1))
+    p.hook_symbol("dprintf", printFormat(1))
+    p.hook_symbol("sprintf", printFormat(1))
+    p.hook_symbol("snprintf", printFormat(2))
+
+    # Stdarg base ones
+    p.hook_symbol("vprintf", printFormat(0))
+    p.hook_symbol("vfprintf", printFormat(1))
+    p.hook_symbol("vdprintf", printFormat(1))
+    p.hook_symbol("vsprintf", printFormat(1))
+    p.hook_symbol("vsnprintf", printFormat(2))
+    '''
+
 # Best effort system hooks
 def hook_list(p, hooks):
     for sys_type in hooks:
@@ -17,12 +33,19 @@ def hook_list(p, hooks):
 
 
 def hook_printf_list(p, hooks):
-    for sys_type in hooks:
-        try:
-            p.hook_symbol(sys_type.name, printf_mapping[sys_type.name]())
-        except Exception as e:
-            print(e)
-            pass
+    # Stdio based ones
+    p.hook_symbol("printf", printFormat(0))
+    p.hook_symbol("fprintf", printFormat(1))
+    p.hook_symbol("dprintf", printFormat(1))
+    p.hook_symbol("sprintf", printFormat(1))
+    p.hook_symbol("snprintf", printFormat(2))
+
+    # Stdarg base ones
+    p.hook_symbol("vprintf", printFormat(0))
+    p.hook_symbol("vfprintf", printFormat(1))
+    p.hook_symbol("vdprintf", printFormat(1))
+    p.hook_symbol("vsprintf", printFormat(1))
+    p.hook_symbol("vsnprintf", printFormat(2))
 
 
 def get_funcs_and_prj(filename, system_check=False, printf_check=False):

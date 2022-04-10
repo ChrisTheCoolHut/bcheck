@@ -73,7 +73,7 @@ def main():
     app.conf["worker_max_memory_per_child"] = args.memory_limit * 1024 * 1024
 
     if not args.system and not args.printf:
-        print("Please select check mode of -p or -s. Or both")
+        print("Please select check mode of printf checking (-p) or command injection testing (-s). Or both")
         exit(0)
 
     print("[~] {}".format(args.file))
