@@ -82,6 +82,8 @@ def get_funcs_and_prj(filename, system_check=False, printf_check=False):
         # reference
         for func in binary_system_list:
             func_node = cfg.model.get_any_node(func.rebased_addr)
+            if not func_node:
+                continue
             func_callers = func_node.predecessors
             for func_caller in func_callers:
                 xrefs.add(func_caller.function_address)

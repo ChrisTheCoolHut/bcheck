@@ -100,8 +100,8 @@ class printFormat(angr.procedures.libc.printf.printf):
         solv = state.solver.eval
 
         if len(self.arguments) <= i:
-            print("{} vs {}".format(len(self.arguments),i))
-            print(hex(state.globals["func_addr"]))
+            #print("{} vs {}".format(len(self.arguments),i))
+            #print(hex(state.globals["func_addr"]))
             return False
         printf_arg = self.arguments[i]
 
@@ -183,9 +183,10 @@ class SystemLibc(angr.procedures.libc.system.system):
 
         state = self.state
 
-        # We can't interact with raw bitvectors as potential system candidates
-        if "claripy.ast.bv.BV" in str(type(cmd)):
-            return False
+        # If you're not using the latest angr you'll get errors here. Uncomment
+        # if "claripy.ast.bv.BV" in str(type(cmd)):
+        #     print("raw bit vector")
+        #     return False
 
         clarip = cmd.to_claripy()
         location = self.state.solver.eval(clarip)

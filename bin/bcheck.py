@@ -102,31 +102,43 @@ def main():
 
     t = start_workers(worker)
 
-    pool_args = []
+    # Do them in batches
+    batch_size = 50
+    def divide_chunks(l, n):
+     
+        # looping till length l
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
 
-    for func in funcs:
-        pool_args.append((proj, func))
+    func_batches = divide_chunks(funcs, batch_size)
 
-    results = async_and_iter(do_trace, pool_args)
+    results = []
+
+    for func_batch in func_batches:
+        pool_args = []
+        for func in func_batch:
+            pool_args.append((proj, func))
+
+        print("itering")
+        results = async_and_iter(do_trace, pool_args)
+
+        func_addres = [x for x, y in results]
+
+        print("[-] Scanned functions:")
+        for func in funcs:
+            func_name = proj.loader.find_symbol(func)
+            if func_name:
+                func_name = func_name.name
+            if func in func_addres:
+                print("[+] : {} : {}".format(hex(func), func_name))
+                pair = [(x, y) for x, y in results if x == func][0]
+                print(pair[1])
+            else:
+                print("[-] : {} : {}".format(hex(func), func_name))
 
     app.control.shutdown()
 
     t.join()
-
-    func_addres = [x for x, y in results]
-
-    print("[-] Scanned functions:")
-    for func in funcs:
-        func_name = proj.loader.find_symbol(func)
-        if func_name:
-            func_name = func_name.name
-        if func in func_addres:
-            print("[+] : {} : {}".format(hex(func), func_name))
-            pair = [(x, y) for x, y in results if x == func][0]
-            print(pair[1])
-        else:
-            print("[-] : {} : {}".format(hex(func), func_name))
-
 
 if __name__ == "__main__":
     main()
