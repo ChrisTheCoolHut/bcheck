@@ -16,7 +16,6 @@ setuptools.setup(
      "celery",
      "pyelftools",
      "r2pipe",
-     "shutil",
      "tox",
      "tqdm",
      ],
