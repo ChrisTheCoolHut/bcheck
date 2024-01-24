@@ -156,8 +156,9 @@ def get_funcs_and_prj(filename, system_check=False, printf_check=False, use_angr
             for caller in xref_list:
                 if caller["type"] == "NULL":
                     continue
-                fcn_addr = caller['fcn_addr']
-                xrefs.add(fcn_addr)
+                fcn_addr = caller.get('fcn_addr',None)
+                if fcn_addr:
+                    xrefs.add(fcn_addr)
 
         xrefs = list(xrefs)
 
