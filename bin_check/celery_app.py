@@ -16,6 +16,7 @@ options = {
     "accept_content": ["pickle", "json"],
     "result_serializer": "pickle",
     "task_serializer": "pickle",
+    "task_acks_late" : True
 }
 
 

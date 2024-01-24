@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import logging
+import shutil
 
 logging.basicConfig()
 
@@ -14,6 +15,8 @@ for log in log_things:
     logger.disabled = True
     logger.propagate = False
 
+def r2_installed():
+    return shutil.which("r2")
 
 def main():
 
@@ -63,6 +66,16 @@ def main():
         action="store_true",
         default=False,
     )
+    parser.add_argument(
+        "--use_angr_cfg",
+        action="store_true",
+        help="Use angr to generate CFG (Warning it's slow and memory intensive)",
+        default=False
+    )
+
+    if not r2_installed:
+        print("Can't find r2, using angr CFG. Results will be SLOW. reccomend installing radare2.")
+        args.use_angr_cfg = True
 
     args = parser.parse_args()
 
@@ -89,7 +102,7 @@ def main():
     if args.printf:
         print("[~] Checking for format string vulnerabilities")
 
-    funcs, proj = get_funcs_and_prj(args.file, args.system, args.printf)
+    funcs, proj = get_funcs_and_prj(args.file, args.system, args.printf, use_angr=args.use_angr_cfg)
 
     if len(funcs) == 0:
         print("No test sites found. Exitting (Maybe no xrefs to checked functions?)")
@@ -120,12 +133,13 @@ def main():
             pool_args.append((proj, func))
 
         print("itering")
+        results = []
         results = async_and_iter(do_trace, pool_args)
 
         func_addres = [x for x, y in results]
 
         print("[-] Scanned functions:")
-        for func in funcs:
+        for func in func_batch:
             func_name = proj.loader.find_symbol(func)
             if func_name:
                 func_name = func_name.name

@@ -48,7 +48,7 @@ def hook_printf_list(p, hooks):
     p.hook_symbol("vsnprintf", printFormat(2))
 
 
-def get_funcs_and_prj(filename, system_check=False, printf_check=False):
+def get_funcs_and_prj(filename, system_check=False, printf_check=False, use_angr=False):
 
     # Give us tracing information
     my_extras = {
@@ -64,44 +64,102 @@ def get_funcs_and_prj(filename, system_check=False, printf_check=False):
     # Run faster
     my_extra = angr.options.unicorn.union(my_extra)
 
-    p = angr.Project(filename, auto_load_libs=False)
+    if not use_angr:
+        import r2pipe
+        import json
+        r = r2pipe.open(filename)
+        r.cmd('aaaa')
+        bin_info = r.cmd("ij")
+        bin_info = json.loads(bin_info)
+        base_addr = bin_info["bin"]["baddr"]
+
+        p = angr.Project(filename, auto_load_libs=False, main_opts={"base_addr": base_addr})
+    else:
+        p = angr.Project(filename, auto_load_libs=False)
 
     binary_system_list = [x for x in p.loader.symbols if x.name in system_list]
-
     binary_printf_list = [x for x in p.loader.symbols if x.name in printf_list]
-
-    print("[~] Building CFG")
-    cfg = p.analyses.CFG(cross_references=True, show_progressbar=True)
 
     xrefs = set()
 
+    check_list = []
+
     if system_check:
         hook_list(p, binary_system_list)
-
-        # Get all functions that have a system call
-        # reference
-        for func in binary_system_list:
-            func_node = cfg.model.get_any_node(func.rebased_addr)
-            if not func_node:
-                continue
-            func_callers = func_node.predecessors
-            for func_caller in func_callers:
-                xrefs.add(func_caller.function_address)
-
+        check_list.extend(binary_system_list)
     if printf_check:
         hook_printf_list(p, binary_printf_list)
+        check_list.extend(binary_printf_list)
+
+    if not use_angr:
+        check_list = []
+        funcs = r.cmd("aflj")
+        funcs = json.loads(funcs)
+        binary_system_list = []
+        binary_printf_list = []
+        for func in funcs:
+            func_name = func.get("name", None)
+            if func_name:
+                if any([x in func_name for x in system_list]):
+                    binary_system_list.append(func["offset"])
+                if any([x in func_name for x in printf_list]):
+                    binary_printf_list.append(func["offset"])
+    
+        if system_check:
+            check_list.extend(binary_system_list)
+        if printf_check:
+            check_list.extend(binary_printf_list)
+
+    if use_angr:
+        print("[~] Building CFG")
+        import os
+        import pickle
+        if os.path.exists('bin.cfg'):
+            with open('bin.cfg', 'rb') as f:
+                print("loading cfg")
+                cfg = pickle.load(f)
+        else:
+            cfg = p.analyses.CFG(cross_references=True, show_progressbar=True)
+            with open('bin.cfg', 'wb') as f:
+                pickle.dump(cfg, f)
 
         # Get all functions that have a system call
         # reference
-        for func in binary_printf_list:
-            func_node = cfg.model.get_any_node(func.rebased_addr)
+        for func in check_list:
+            if isinstance(func,int):
+                addr = func
+            else:
+                addr = func.rebased_addr
+            func_node = cfg.model.get_any_node(addr)
             if not func_node:
                 continue
             func_callers = func_node.predecessors
             for func_caller in func_callers:
                 xrefs.add(func_caller.function_address)
 
-    xrefs = list(xrefs)
+        xrefs = list(xrefs)
+
+        del cfg
+
+    else:
+
+        # Get all functions that have a system call
+        # reference
+        for func in check_list:
+            if isinstance(func,int):
+                addr = func
+            else:
+                addr = func.rebased_addr
+            
+            xref_list = r.cmd('axtj @ {}'.format(addr))
+            xref_list = json.loads(xref_list)
+            for caller in xref_list:
+                if caller["type"] == "NULL":
+                    continue
+                fcn_addr = caller['fcn_addr']
+                xrefs.add(fcn_addr)
+
+        xrefs = list(xrefs)
 
     print("Found {} test sites in binary".format(len(xrefs)))
 
