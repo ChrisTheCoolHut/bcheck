@@ -52,6 +52,6 @@ Found 5 test sites in binary
 
 ## Test
 
-```language
-
+```bash
+tox
 ```
