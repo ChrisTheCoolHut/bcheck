@@ -150,6 +150,7 @@ def main():
             else:
                 print("[-] : {} : {}".format(hex(func), func_name))
 
+    print("[*] Done scanning. Shutting down")
     app.control.shutdown()
 
     t.join()
