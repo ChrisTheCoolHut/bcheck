@@ -23,18 +23,21 @@ options = {
 app = Celery("CeleryTask")
 app.config_from_object(options)
 
+@app.task
+def do_trace_with_id(proj, func_addr, avoid_list=[], id=None):
+    return do_trace(proj, func_addr, avoid_list) + (id,)
 
 # Keep it simple. Make a blank state and let it run
 # arguments are already symbolic data so we don't
 # need to build a call state.
 @app.task
-def do_trace(proj, func_addr):
+def do_trace(proj, func_addr, avoid_list=[]):
     fix_sys_bugs()
 
     state = proj.factory.blank_state(addr=func_addr)
     state.globals["func_addr"] = func_addr
     simgr = proj.factory.simgr(state)
-    simgr.explore(find=lambda s: "exploitable" in s.globals)
+    simgr.explore(find=lambda s: "exploitable" in s.globals, avoid=avoid_list)
 
     if "found" in simgr.stashes and len(simgr.found):
         return (func_addr, simgr.found[0].globals["cmd"])
@@ -82,7 +85,8 @@ def async_and_iter(async_function, async_list):
 
     for item in async_list:
         # n_task = async_function.delay(item)
-        n_task = async_function.apply_async(args=[item[0], item[1]])
+        n_task = async_function.apply_async(args=item)
+        # n_task = async_function.apply_async(args=[item[0], item[1]])
         async_funcs.append(n_task)
 
     bar = tqdm.tqdm(total=len(async_funcs))

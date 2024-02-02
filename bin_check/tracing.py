@@ -48,7 +48,7 @@ def hook_printf_list(p, hooks):
     p.hook_symbol("vsnprintf", printFormat(2))
 
 
-def get_funcs_and_prj(filename, system_check=False, printf_check=False, use_angr=False):
+def get_funcs_and_prj(filename, system_check=False, printf_check=False, use_angr=False, r2=None):
 
     # Give us tracing information
     my_extras = {
@@ -67,8 +67,11 @@ def get_funcs_and_prj(filename, system_check=False, printf_check=False, use_angr
     if not use_angr:
         import r2pipe
         import json
-        r = r2pipe.open(filename)
-        r.cmd('aaaa')
+        if r2 == None:
+            r = r2pipe.open(filename, ['-2'])
+            r.cmd('aaaa')
+        else:
+            r = r2
         bin_info = r.cmd("ij")
         bin_info = json.loads(bin_info)
         base_addr = bin_info["bin"]["baddr"]
