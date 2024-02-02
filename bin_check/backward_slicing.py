@@ -46,10 +46,8 @@ def get_xrefs_to_func(r2,addr):
         "refname":"sym.mtd_write_firmware"}
     ]
     '''
-    print('axtj @ {}'.format(addr))
     json_text = r2.cmd('axtj @ {}'.format(addr))
     xrefs = json.loads(json_text)
-    print(xrefs)
     return xrefs
 
 def get_basic_block_from_addr(r2,addr):
